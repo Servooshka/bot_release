@@ -93,8 +93,8 @@ btn1 = types.KeyboardButton('/start')
 help_button = types.KeyboardButton("Помощь")
 rasp_button = types.KeyboardButton('Расписание')
 moe_rasp_button = types.KeyboardButton('Мое расписание')
-rasp_na_den_button = types.KeyboardButton('Расписание на сегодня')
-moe_raspisanie_na_den_button = types.KeyboardButton('Мое расписание на сегодня')
+rasp_na_den_button = types.KeyboardButton('Расписание на день')
+moe_raspisanie_na_den_button = types.KeyboardButton('Мое расписание на день')
 predl_button = types.KeyboardButton('Есть предложение')
 urok_button = types.KeyboardButton('Какой сейчас урок')
 urok_u_menya_button = types.KeyboardButton('Какой у меня сейчас урок')
@@ -132,10 +132,10 @@ rasp.add(class11)
 rasp.add(back)
 
 bukva_classa_menu = types.ReplyKeyboardMarkup(resize_keyboard=True)
-class_9a = types.KeyboardButton("А")
-class_9b = types.KeyboardButton("Б")
+class_a = types.KeyboardButton("А")
+class_b = types.KeyboardButton("Б")
 
-bukva_classa_menu.add(class_9a, class_9b)
+bukva_classa_menu.add(class_a, class_b)
 
 back_button = types.ReplyKeyboardMarkup(resize_keyboard=True)
 back_button.add(back)
@@ -148,6 +148,12 @@ reject_button = types.KeyboardButton('Нет')
 confirm_or_reject.add(confirm_button, reject_button)
 
 
+vibor_dnia = types.ReplyKeyboardMarkup(resize_keyboard=True)
+zavtra_button = types.KeyboardButton("Завтра")
+segodnya_button = types.KeyboardButton("Сегодня")
+
+vibor_dnia.add(segodnya_button, zavtra_button)
+vibor_dnia.add(back)
 
 
 zvonki = [510, 555, 565, 610, 630, 675, 695, 740, 755, 800, 815, 860, 870, 915, 925, 970, 975, 1020]
@@ -401,16 +407,9 @@ def vibor_classa_dlya_moego_uroka(message):
     global nomer_classa_kakoi_urok, nomer_classa
     nomer_classa_kakoi_urok = nomer_classa
     print(nomer_classa)
-    # if nomer_classa == "10" or nomer_classa == "11":
-    #     cho_za_urok(message)
-
-
-        # bot.send_message(message.chat.id, "Какая буква?", reply_markup=bukva_classa_menu)
-        # bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_bukvi_moy_urok)
-
     if message.text == "Назад":
         bot.send_message(message.chat.id, "Что ты хочешь сделать?", reply_markup=hub)
-    
+
     else: # nomer_classa_kakoi_urok == "9" or nomer_classa_kakoi_urok == "8" or nomer_classa_kakoi_urok == "7" or nomer_classa_kakoi_urok == "6" or nomer_classa_kakoi_urok == "5":
         cho_za_urok(message)
 
@@ -434,12 +433,13 @@ def cho_za_urok(message):
                 
                 if lesson[0] == str(urok):
                     lesson_chist = line.strip().split(":")[1]
+                    
                     # print(lesson_chist)
                     if urok % 2 != 0:
-                        bot.send_message(message.chat.id, f"Сейчас: {lesson_chist} \n\n{vremya(message)}", reply_markup=hub)
+                        bot.send_message(message.chat.id, f"Сейчас: {lesson_chist} \n\n{vremya()}", reply_markup=hub)
                     if urok % 2 == 0:
-                        bot.send_message(message.chat.id, f"{lesson_chist}", reply_markup=hub)
-    # else:
+                        bot.send_message(message.chat.id, f"{lesson_chist} \n\n{vremya()}", reply_markup=hub)
+
 
 
 
@@ -539,18 +539,60 @@ def kakaya_bukva(message:Message):
         set_class_s_bukvami(message)
 
 
-@bot.message_handler(func=lambda message: message.text=='Мое расписание на сегодня')
-def set_class_raspisanie_na_den(message):
+@bot.message_handler(func=lambda message: message.text=='Мое расписание на день')
+def set_class_raspisanie_na_den(message:Message):
+    global weekday
     set_class_raspisanie(message)
-    if set_class_flag == True:
-        uroki_na_moy_den(message)
+    # proverka_dnya_nedeli(message)
+    proverka_dnya_nedeli_bez_message()
+
+    bot.send_message(message.chat.id, "На когда?", reply_markup=vibor_dnia)
+    bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_raspisania_na_moy_den)
         
+def vibor_raspisania_na_moy_den(message:Message):
+    global weekday
+    if message.text == "Завтра":
+        weekday += 1     
+        uroki_na_moy_den(message)
+    elif message.text == "Сегодня":
+        proverka_dnya_nedeli(message)
+        if proverka_dnya_nedeli_flag == True:
+            uroki_na_moy_den(message)
+    elif message.text == "Назад":
+        bot.send_message(message.chat.id, "Что ты хочешь сделать?", reply_markup=hub)
 
 
-@bot.message_handler(func=lambda message: message.text=='Расписание на сегодня')
-def raspisanie(message: Message):
-    bot.send_message(message.chat.id, "В каком ты классе?".format(message.from_user), reply_markup=rasp)
-    bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_classa_rasp_na_den)
+@bot.message_handler(func=lambda message: message.text=='Расписание на день')
+def raspisanie_na_den(message: Message):
+    global weekday
+    # proverka_dnya_nedeli(message)
+    proverka_dnya_nedeli_bez_message()
+
+    bot.send_message(message.chat.id, "На когда?", reply_markup=vibor_dnia)
+    bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_raspisania_na_den)
+    # bot.send_message(message.chat.id, "В каком ты классе?".format(message.from_user), reply_markup=rasp)
+    # bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_classa_rasp_na_den)
+    # else:
+    #     bot.send_message(message.chat.id, "Сейчас выходные".format(message.from_user), reply_markup=rasp)
+
+
+
+
+def vibor_raspisania_na_den(message:Message):
+    global weekday
+    if message.text == "Завтра":
+        weekday += 1
+        bot.send_message(message.chat.id, "В каком ты классе?", reply_markup=rasp)
+        bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_classa_rasp_na_den)
+    elif message.text == "Сегодня":
+        proverka_dnya_nedeli(message)
+        if proverka_dnya_nedeli_flag == True:
+            bot.send_message(message.chat.id, "В каком ты классе?", reply_markup=rasp)
+            bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_classa_rasp_na_den)
+    elif message.text == "Назад":
+        bot.send_message(message.chat.id, "Что ты хочешь сделать?", reply_markup=hub)
+
+
 
 
 def vibor_classa_rasp_na_den(message:Message):
@@ -560,21 +602,11 @@ def vibor_classa_rasp_na_den(message:Message):
         bot.send_message(message.chat.id, "Какая буква?", reply_markup=bukva_classa_menu)
         bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_bukvi_rasp_na_den)
 
-
-    elif message.text == "10" or message.text == "11":
-        
-        proverka_dnya_nedeli(message)
-        if proverka_dnya_nedeli_flag == True:
-            uroki_na_den(message)
-
-    # elif message.text == "11":
-    #     uroki_na_den_11_class(message)
-            
+    elif message.text == "10" or message.text == "11":  
+        uroki_na_den(message)      
             
     elif message.text == "Назад":
-
         bot.send_message(message.chat.id, "Что ты хочешь сделать?", reply_markup=hub)
-
     else:
         bot.send_message(message.chat.id, "Неверный класс, выберите из списка")
         bot.register_next_step_handler_by_chat_id(message.chat.id, vibor_classa_rasp_na_den)
@@ -596,11 +628,18 @@ def  proverka_dnya_nedeli(message):
         proverka_dnya_nedeli_flag = False
         bot.send_message(message.chat.id, "Сейчас выходные", reply_markup=hub)
 
+def proverka_dnya_nedeli_bez_message():
+    global weekday, proverka_dnya_nedeli_flag
+    if weekday < 5:
+        proverka_dnya_nedeli_flag = True
+    else:
+        proverka_dnya_nedeli_flag = False
+
 
 
 def uroki_na_den(message):
     global weekday, proverka_dnya_nedeli_flag
-    proverka_dnya_nedeli(message)
+
     if proverka_dnya_nedeli_flag == True:
         with open(f"Данные/subjects_{class_s_bukvoi}_class/{weekday}.txt", "r", encoding = "utf-8") as f:
             lessons = ""
@@ -615,10 +654,25 @@ def uroki_na_den(message):
                     num_uroka += 1
                     # print(lessons)
         bot.send_message(message.chat.id, lessons, reply_markup=hub)
+    else:
+        with open(f"Данные/subjects_{class_s_bukvoi}_class/1.txt", "r", encoding = "utf-8") as f:
+            lessons = ""
+            num_uroka = 1
+            for line in f:
+                # for i in len(f - 1):
+                lessons_num = line.strip().split(":")[0]
+                lessons_nichego = line.strip().split(":")[1]
+                if int(lessons_num) % 2 != 0 and lessons_nichego != "Уроков нет":
+                    lessons_chist = line.strip().split(":")[1]
+                    lessons += f"{num_uroka}: {lessons_chist}\n"
+                    num_uroka += 1
+                    # print(lessons)
+        bot.send_message(message.chat.id, "Уроки на понедельник:")
+        bot.send_message(message.chat.id, lessons, reply_markup=hub)
 
 def uroki_na_moy_den(message):
-    global weekday, proverka_dnya_nedeli_flag
-    proverka_dnya_nedeli(message)
+    global weekday, proverka_dnya_nedeli_flag, nomer_classa
+    proverka_dnya_nedeli_bez_message()
     if proverka_dnya_nedeli_flag == True:
         with open(f"Данные/subjects_{nomer_classa}_class/{weekday}.txt", "r", encoding = "utf-8") as f:
             lessons = ""
@@ -633,6 +687,21 @@ def uroki_na_moy_den(message):
                     num_uroka += 1
                     # print(lessons)
         bot.send_message(message.chat.id, lessons, reply_markup=hub)
+    else:
+        with open(f"Данные/subjects_{nomer_classa}_class/1.txt", "r", encoding = "utf-8") as f:
+            lessons = ""
+            num_uroka = 1
+            for line in f:
+                # for i in len(f - 1):
+                lessons_num = line.strip().split(":")[0]
+                lessons_nichego = line.strip().split(":")[1]
+                if int(lessons_num) % 2 != 0 and lessons_nichego != "Уроков нет":
+                    lessons_chist = line.strip().split(":")[1]
+                    lessons += f"{num_uroka}: {lessons_chist}\n"
+                    num_uroka += 1
+                    # print(lessons)
+        bot.send_message(message.chat.id, "Уроки на понедельник:")
+        bot.send_message(message.chat.id, lessons, reply_markup=hub)
 
 @bot.message_handler(func=lambda message: message.text=='Есть предложение')
 def est_predl(message: Message):
@@ -646,7 +715,7 @@ def napisal_predl(message: Message):
         bot.send_message(message.chat.id, "Что ты хочешь сделать?",  reply_markup=hub)
     else:
         bot.send_message(message.chat.id, "Спасибо за предложение, постараемся учесть его!", reply_markup=hub)
-        bot.send_message(admin_id, f"Предложение от пользователся @{message.from_user.username}")
+        bot.send_message(admin_id, f"Предложение от пользователя @{message.from_user.username}")
         bot.forward_message(admin_id, message.chat.id, message.message_id)
         # command_predl = False
         print(message.from_user.username, ": ", message.text, sep="")  
@@ -710,7 +779,7 @@ def chistoe_vremya(message):
 
 
 
-def vremya(message):
+def vremya():
 
     global urok, zvonok, result, weekday
     
@@ -743,7 +812,7 @@ def vremya(message):
         return
     elif urok == 1:
         print("1 урок")
-        return f"Сейчас 1 урок. \n{vremya_zvonka()}"
+        return f"Идет 1 урок. \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 1 урок. \n{vremya_zvonka()}")
     # elif urok == 1:
     #     print("Перемена 1")
@@ -753,7 +822,7 @@ def vremya(message):
         bot.send_message(message.chat.id, f"Сейчас перемена, следующий урок: 2 \n{vremya_zvonka()}")
     elif urok == 3:
         print("2 урок")
-        return f"Сейчас 2 урок \n{vremya_zvonka()}"
+        return f"Идет 2 урок \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 2 урок \n{vremya_zvonka()}")
     elif urok == 4:
         print("Перемена 2")
@@ -761,43 +830,55 @@ def vremya(message):
         bot.send_message(message.chat.id, f"Сейчас перемена, следующий урок: 3 \n{vremya_zvonka()}")
     elif urok == 5:
         print("3 урок")
+        return f"Идет 3 урок \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 3 урок \n{vremya_zvonka()}")
     elif urok == 6:
         print("Перемена 3")
+        return f"Сейчас перемена, следующий урок: 4 \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас перемена, следующий урок: 4 \n{vremya_zvonka()}")
     elif urok == 7:
         print("4 урок")
+        return f"Идет 4 урок \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 4 урок \n{vremya_zvonka()}")
     elif urok == 8:
         print("Перемена 4")
+        return f"Сейчас перемена, следующий урок: 5 \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас перемена, следующий урок: 5 \n{vremya_zvonka()}")
     elif urok == 9:
         print("5 урок")
+        return f"Идет 5 урок \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 5 урок \n{vremya_zvonka()}")
     elif urok == 10:
         print("Перемена 5")
+        return f"Сейчас перемена, следующий урок: 6 \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас перемена, следующий урок: 6 \n{vremya_zvonka()}")
     elif urok == 11:
         print("6 урок")
+        return f"Идет 6 урок \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 6 урок \n{vremya_zvonka()}")
     elif urok == 12:
         print("Перемена 6")
+        return f"Сейчас перемена, следующий урок: 7 \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас перемена, следующий урок: 7 \n{vremya_zvonka()}")
     elif urok == 13:
         print("7 урок")
-        return f"7 урок \n{vremya_zvonka()}"
+        return f"Идет 7 урок \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 7 урок \n{vremya_zvonka()}")
     elif urok == 14:
         print("Перемена 7")
+        return f"Сейчас перемена, следующий урок: 8 \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас перемена, следующий урок: 8 \n{vremya_zvonka()}")
     elif urok == 15:
         print("8 урок")
+        return f"Идет 8 урок \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 8 урок \n{vremya_zvonka()}")
     elif urok == 16:
         print("Перемена 8")
+        return f"Сейчас перемена, следующий урок: 9 \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас перемена, следующий урок: 9 \n {vremya_zvonka()}")
     elif urok == 17:
         print("9 урок")
+        return f"Идет 9 урок \n{vremya_zvonka()}"
         bot.send_message(message.chat.id, f"Сейчас 9 урок \n {vremya_zvonka()}")
 
 
