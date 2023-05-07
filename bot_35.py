@@ -1,10 +1,11 @@
 import telebot
 from telebot import types
 from telebot.types import Message
-import time, random
+import time
+import random
 import datetime
-
 import threading
+from threading import Thread
 
 
 
@@ -912,9 +913,15 @@ def vremya_zvonka():
         # return bot.send_message(message.chat.id, "Уроки еще не начались")
         return "Уроки еще не начались"
 
-try:
-    bot.polling(none_stop=True)
-except Exception as e:
-    print(e)
+# try:
+#     bot.polling(none_stop=True)
+# except Exception as e:
+#     print(e)
 
+def bot_thread():                
+   bot.remove_webhook()
+   bot.polling(none_stop=True, interval=0)
+t = Thread(target=bot_thread)
+t.setDaemon(True)
+t.start()
 
